@@ -1,12 +1,34 @@
 // ===== My Prestige - Luxury Concierge Landing Page =====
 
 document.addEventListener('DOMContentLoaded', () => {
+    initPageLoader();
     initNavbar();
     initScrollReveal();
     initSmoothScroll();
     initParallaxStars();
     initFormHandler();
+    initWhatsAppWidget();
+    initCustomCursor();
 });
+
+// ===== Page Loader =====
+function initPageLoader() {
+    const loader = document.getElementById('pageLoader');
+    if (!loader) return;
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            loader.classList.add('loaded');
+        }, 2000);
+    });
+
+    // Fallback if load event already fired
+    if (document.readyState === 'complete') {
+        setTimeout(() => {
+            loader.classList.add('loaded');
+        }, 2000);
+    }
+}
 
 // ===== Navbar Functionality =====
 function initNavbar() {
@@ -144,74 +166,172 @@ function initParallaxStars() {
     }, { passive: true });
 }
 
-// ===== Cursor Glow Effect (Optional - Desktop Only) =====
-if (window.innerWidth > 1024) {
-    const glow = document.createElement('div');
-    glow.className = 'cursor-glow';
-    document.body.appendChild(glow);
+// ===== WhatsApp Chat Widget =====
+function initWhatsAppWidget() {
+    const toggle = document.getElementById('whatsappToggle');
+    const bubble = document.getElementById('chatBubble');
+    const close = document.getElementById('chatClose');
+    const input = document.getElementById('chatInput');
+    const send = document.getElementById('chatSend');
+    const badge = document.querySelector('.wa-badge');
 
-    const glowStyle = document.createElement('style');
-    glowStyle.textContent = `
-        .cursor-glow {
-            position: fixed; width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(201, 169, 98, 0.1) 0%, transparent 70%);
-            pointer-events: none; z-index: -1; transform: translate(-50%, -50%);
-            transition: opacity 0.3s;
-        }
-    `;
-    document.head.appendChild(glowStyle);
+    const phoneNumber = '33749612724';
 
-    document.addEventListener('mousemove', (e) => {
-        glow.style.left = e.clientX + 'px';
-        glow.style.top = e.clientY + 'px';
+    toggle?.addEventListener('click', () => {
+        bubble.classList.toggle('active');
+        if (badge) badge.style.display = 'none';
     });
+
+    close?.addEventListener('click', () => {
+        bubble.classList.remove('active');
+    });
+
+    function sendToWhatsApp() {
+        const message = input.value.trim();
+        const text = message || "Bonjour, je souhaite en savoir plus sur vos services.";
+        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+        input.value = '';
+        bubble.classList.remove('active');
+    }
+
+    send?.addEventListener('click', sendToWhatsApp);
+    input?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendToWhatsApp();
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.whatsapp-widget')) {
+            bubble?.classList.remove('active');
+        }
+    });
+}
+
+// ===== Custom Cursor =====
+function initCustomCursor() {
+    // Only on devices with fine pointer (mouse)
+    if (window.matchMedia('(pointer: fine)').matches === false) return;
+
+    const dot = document.querySelector('.cursor-dot');
+    const ring = document.querySelector('.cursor-ring');
+
+    if (!dot || !ring) return;
+
+    let mouseX = 0, mouseY = 0;
+    let ringX = 0, ringY = 0;
+
+    // Track mouse position
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dot.style.left = mouseX + 'px';
+        dot.style.top = mouseY + 'px';
+    });
+
+    // Animate ring with delay
+    function animateRing() {
+        ringX += (mouseX - ringX) * 0.15;
+        ringY += (mouseY - ringY) * 0.15;
+        ring.style.left = ringX + 'px';
+        ring.style.top = ringY + 'px';
+        requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    // Hover effect on interactive elements
+    const interactiveElements = document.querySelectorAll('a, button, .service-card, .pricing-card, .testimonial-card, input, select, textarea, .faq-item');
+    interactiveElements.forEach(el => {
+        el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+        el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+    });
+
+    // Click effect
+    document.addEventListener('mousedown', () => ring.classList.add('clicking'));
+    document.addEventListener('mouseup', () => ring.classList.remove('clicking'));
 }
 
 // ===== Form Handler =====
 function initFormHandler() {
     const form = document.getElementById('registrationForm');
+    const whatsappBtn = document.getElementById('sendWhatsApp');
+
     if (!form) return;
 
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
+    // Send via WhatsApp
+    whatsappBtn?.addEventListener('click', () => {
+        // Validate form first
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
 
-        // Get form data
         const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {
-            if (data[key]) {
-                if (Array.isArray(data[key])) {
-                    data[key].push(value);
-                } else {
-                    data[key] = [data[key], value];
-                }
-            } else {
-                data[key] = value;
-            }
-        });
+        const phoneNumber = '33749612724';
 
-        // Log form data (in production, send to server)
-        console.log('Form submitted:', data);
+        let message = "🌟 *Nouvelle demande My Prestige*\n\n";
+        message += `👤 *Nom:* ${formData.get('firstName')} ${formData.get('lastName')}\n`;
+        message += `📧 *Email:* ${formData.get('email')}\n`;
+        message += `📱 *Téléphone:* ${formData.get('phone')}\n`;
+
+        if (formData.get('city')) {
+            message += `📍 *Ville:* ${formData.get('city')}\n`;
+        }
+        if (formData.get('formula')) {
+            message += `💎 *Formule:* ${formData.get('formula')}\n`;
+        }
+
+        // Selected services
+        const services = formData.getAll('services');
+        if (services.length > 0) {
+            message += `\n✨ *Services souhaités:*\n`;
+            services.forEach(s => message += `• ${s}\n`);
+        }
+
+        if (formData.get('message')) {
+            message += `\n💬 *Message:*\n${formData.get('message')}`;
+        }
+
+        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
 
         // Show success message
-        const formContainer = form.parentElement;
-        form.style.display = 'none';
+        showFormSuccess(form);
+    });
 
-        const successMessage = document.createElement('div');
-        successMessage.className = 'form-success';
-        successMessage.innerHTML = `
-            <div class="success-icon">✨</div>
-            <h3>Merci pour votre demande !</h3>
-            <p>Notre équipe vous recontactera dans les plus brefs délais.<br>
-            <strong>Réponse garantie sous 2 heures.</strong></p>
+    // Email submission - show loading state
+    form.addEventListener('submit', function (e) {
+        const btn = form.querySelector('.btn-submit');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = `
+            <svg class="spinner" viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10">
+                    <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+            <span>Envoi en cours...</span>
         `;
-        formContainer.appendChild(successMessage);
-
-        // Scroll to success message
-        successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        btn.disabled = true;
     });
 }
 
+function showFormSuccess(form) {
+    const formContainer = form.parentElement;
+    form.style.display = 'none';
+
+    const successMessage = document.createElement('div');
+    successMessage.className = 'form-success';
+    successMessage.innerHTML = `
+        <div class="success-icon">✨</div>
+        <h3>Merci pour votre demande !</h3>
+        <p>Notre équipe vous recontactera dans les plus brefs délais.<br>
+        <strong>Réponse garantie sous 2 heures.</strong></p>
+    `;
+    formContainer.appendChild(successMessage);
+
+    // Scroll to success message
+    successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 // ===== Console Branding =====
 console.log('%c✨ My Prestige', 'color: #C9A962; font-size: 24px; font-weight: bold;');
